@@ -11,8 +11,12 @@ venv/
 
 # Node scratch (exploration only; not part of the deliverable)
 _probe/
+_explore/
 node_modules/
 package-lock.json
+
+# Personal interview prep — local only, never committed
+_prep/
 
 # OS / editor
 .DS_Store
