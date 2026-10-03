@@ -49,32 +49,19 @@ class BettingApiClient:
         selection: str,
         stake: Any,
         with_auth: bool = True,
-        raw_body: str | None = None,
     ) -> requests.Response:
-        """Place a single bet.
-
-        `raw_body` lets negative tests send malformed / non-object payloads
-        (e.g. broken JSON) that a typed dict could not express.
-        """
-        kwargs: dict[str, Any] = {"headers": self._headers(with_auth), "timeout": self.timeout}
-        if raw_body is not None:
-            kwargs["data"] = raw_body
-        else:
-            kwargs["json"] = {"matchId": match_id, "selection": selection, "stake": stake}
-        return self._session.post(f"{self.base_url}/api/place-bet", **kwargs)
-
-    def reset_balance(self, with_auth: bool = True) -> requests.Response:
+        """Place a single bet. `stake` is passed through as-is so negative tests
+        can send non-numeric values (e.g. "abc") to exercise type validation."""
         return self._session.post(
-            f"{self.base_url}/api/reset-balance",
+            f"{self.base_url}/api/place-bet",
+            json={"matchId": match_id, "selection": selection, "stake": stake},
             headers=self._headers(with_auth),
             timeout=self.timeout,
         )
 
-    def request(self, method: str, path: str, with_auth: bool = True) -> requests.Response:
-        """Escape hatch for method-not-allowed / routing tests."""
-        return self._session.request(
-            method.upper(),
-            f"{self.base_url}{path}",
+    def reset_balance(self, with_auth: bool = True) -> requests.Response:
+        return self._session.post(
+            f"{self.base_url}/api/reset-balance",
             headers=self._headers(with_auth),
             timeout=self.timeout,
         )

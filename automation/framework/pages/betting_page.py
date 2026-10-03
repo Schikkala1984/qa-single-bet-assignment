@@ -16,19 +16,13 @@ from .base_page import BasePage
 class BettingPage(BasePage):
     # Header / balance
     HEADER_BALANCE = (By.ID, "header-balance")
-    AUTH_ERROR = (By.ID, "auth-error")
-    MATCH_LIST = (By.ID, "match-list")
-    MATCH_LIST_COUNT = (By.ID, "match-list-count")
 
     # Bet slip
-    SLIP = (By.ID, "bet-slip")
-    SLIP_BALANCE = (By.ID, "bet-slip-balance")
     STAKE_INPUT = (By.ID, "bet-slip-stake-input")
     POTENTIAL_PAYOUT = (By.ID, "bet-slip-potential-payout")
     PLACE_BET = (By.ID, "bet-slip-place-bet")
-    REMOVE_ALL = (By.ID, "bet-slip-remove-all")
 
-    # Success modal
+    # Success modal (receipt)
     MODAL_SUCCESS = (By.ID, "modal-success")
     MODAL_SUCCESS_BET_ID = (By.ID, "modal-success-bet-id")
     MODAL_SUCCESS_MATCH = (By.ID, "modal-success-match")
@@ -37,11 +31,6 @@ class BettingPage(BasePage):
     MODAL_SUCCESS_PAYOUT = (By.ID, "modal-success-payout")
     MODAL_SUCCESS_PLACED_AT = (By.ID, "modal-success-placed-at")
     MODAL_SUCCESS_CLOSE = (By.ID, "modal-success-close")
-
-    # Error modal
-    MODAL_ERROR = (By.ID, "modal-error")
-    MODAL_ERROR_MESSAGE = (By.ID, "modal-error-message")
-    MODAL_ERROR_REBET = (By.ID, "modal-error-rebet")
 
     # ---- navigation -------------------------------------------------------
     def load(self) -> "BettingPage":
@@ -68,9 +57,6 @@ class BettingPage(BasePage):
 
     def potential_payout_text(self) -> str:
         return self.text(self.POTENTIAL_PAYOUT)
-
-    def success_modal_shown(self) -> bool:
-        return self.is_visible(self.MODAL_SUCCESS)
 
     def receipt(self) -> dict[str, str]:
         self.wait_until_visible(self.MODAL_SUCCESS)

@@ -36,11 +36,5 @@ class BasePage:
     def text(self, locator: tuple[str, str]) -> str:
         return self.find(locator).text.strip()
 
-    def is_visible(self, locator: tuple[str, str]) -> bool:
-        try:
-            return self.wait.until(EC.visibility_of_element_located(locator)).is_displayed()
-        except Exception:
-            return False
-
     def wait_until_visible(self, locator: tuple[str, str]) -> WebElement:
         return self.wait.until(EC.visibility_of_element_located(locator))

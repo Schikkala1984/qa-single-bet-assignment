@@ -31,11 +31,8 @@ class Settings:
     headless: bool = _as_bool(os.getenv("HEADLESS", "true"))
     timeout: int = int(os.getenv("TIMEOUT", "15"))
 
-    # Known business rules from the specification (single source of truth for assertions).
+    # Known business rule from the spec, asserted by the UI happy-path test.
     starting_balance: float = 125.50
-    currency: str = "EUR"
-    stake_min: float = 1.00
-    stake_max: float = 100.00
 
     @property
     def app_url(self) -> str:
