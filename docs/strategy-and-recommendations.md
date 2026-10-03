@@ -19,7 +19,9 @@ manual steps.
 
 Together they cover the two risk buckets that matter most — "can the user bet at all and get a
 correct receipt" (UI) and "can a bad bet get through" (API) — across two layers, with almost no
-overlap.
+overlap. In practice this paid off: these two tests directly surfaced the receipt-payout, team-order,
+stale-balance, currency, and payout-rounding defects (encoded as `xfail` checks), which is exactly
+the point of choosing the critical journey plus the authoritative validation layer.
 
 ## What I intentionally left as manual-only, and why
 
@@ -34,20 +36,21 @@ overlap.
   eventually, but it needs a reliable way to force a placement failure (fault injection / a stub).
   Until that hook exists, automating it means relying on real server errors, which is flaky — so it
   stays manual for now.
-- **The reset-balance consistency claim.** The live Swagger literally says the reset "response
-  payload may differ from persisted balance". That is a verification/oracle question best confirmed
-  by a human first (balance before vs after, response vs a follow-up `GET /api/balance`) before being
-  pinned as an automated invariant.
+- **Deep money-reconciliation and multi-bet balance drift.** Confirming cumulative balance
+  correctness across many sequential bets, refunds, and resets is better explored manually/with
+  exploratory sessions first (the reset inconsistency in BUG-03 shows the oracle itself is unreliable),
+  then pinned as automated invariants once the expected model is agreed.
 
 ## Top recommendations if this project scaled
 
-1. **CI/CD with layered gating and a test data strategy.** Run `pytest -m api` on every push (fast,
-   headless, no browser) and `pytest -m "ui or smoke"` on PRs and nightly, in GitHub Actions with a
-   Chrome service and the HTML/Allure report published as an artifact. Crucially, give tests a
-   **deterministic data seam**: `POST /api/reset-balance` already exists — make each money-path test
-   own its state via reset (as the fixtures do) and run per-user-id so parallel runs don't collide.
-   Add a pre-flight auth smoke check that fails the pipeline fast with a clear message if the
-   environment rejects the configured user-id (which is exactly the BUG-01 situation).
+1. **CI/CD with layered gating and a reliable test-data seam.** Run `pytest -m api` on every push
+   (fast, headless, no browser) and `pytest -m "ui or smoke"` on PRs and nightly, in GitHub Actions
+   with a Chrome service and an HTML/Allure report published as an artifact. Give tests a
+   **deterministic data seam** so money assertions are stable: `POST /api/reset-balance` exists for
+   this, but BUG-03 shows it is currently unreliable (response ≠ persisted, resets to the wrong value)
+   — so fixing reset is a prerequisite for trustworthy CI, and until then tests should read the
+   balance from `GET /api/balance` as the source of truth (as the UI test already does). Run
+   per-user-id so parallel runs don't collide on shared state.
 
 2. **Push coverage down the pyramid and add a contract test.** The suite is intentionally thin at the
    top (one UI journey). As it grows, keep most new coverage at the API/`requests` layer (status codes,
@@ -56,8 +59,11 @@ overlap.
    `GET /api/place-bet` returning `200 {}` instead of `405` (BUG-02) automatically, instead of relying
    on someone writing a bespoke assertion.
 
-3. **Resolve spec ambiguities and add observability for money.** Fix the minimum-stake contradiction
-   (Business Rules say €1.00, the validation table says €1.01, the API says "at least 1.00") so the
-   boundary has one true answer. For a real betting product, I'd also want structured logging/alerting
-   on auth-failure rate and placement success rate — the current total-auth-outage (BUG-01) is exactly
-   the kind of thing a "placement success rate dropped to 0%" alert should have caught before a user did.
+3. **Resolve spec ambiguities and add a money-correctness guardrail.** Fix the minimum-stake
+   contradiction (Business Rules €1.00 vs validation table €1.01 vs API "at least 1.00") so the
+   boundary has one true answer. More importantly, the cluster of money defects found here
+   (negative balance, wrong receipt payout, truncated payout, USD/EUR mismatch, stale UI balance)
+   points to a missing **money-invariant layer**: a small set of always-true checks — balance never
+   negative, receipt payout == stake × odds == slip payout, currency == EUR everywhere, UI balance
+   == server balance after each action — asserted in CI and monitored in production. Each of these
+   bugs would have been caught by one of those invariants before reaching a user.

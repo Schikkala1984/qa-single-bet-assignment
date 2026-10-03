@@ -27,7 +27,7 @@ class Settings:
     """Immutable test settings resolved once at import time."""
 
     base_url: str = os.getenv("BASE_URL", "https://qae-assignment-tau.vercel.app").rstrip("/")
-    user_id: str = os.getenv("USER_ID", "chikkala-srinivas")
+    user_id: str = os.getenv("USER_ID", "candidate-pGM9TBT3AEsq")
     headless: bool = _as_bool(os.getenv("HEADLESS", "true"))
     timeout: int = int(os.getenv("TIMEOUT", "15"))
 

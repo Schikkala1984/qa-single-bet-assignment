@@ -70,8 +70,8 @@ class BettingApiClient:
     def matches(self) -> list[dict[str, Any]]:
         """Return the match list, with a clear diagnostic if auth is rejected.
 
-        Raises a readable error (rather than a cryptic KeyError) when the
-        environment is in the BUG-01 state where no user-id authenticates.
+        Raises a readable error (rather than a cryptic KeyError) if the user-id
+        is rejected, so an auth/config problem is obvious from the failure message.
         """
         resp = self.get_matches()
         if resp.status_code == 401:

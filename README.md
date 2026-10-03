@@ -16,12 +16,18 @@ application and its API (`/api/docs`), not just the written spec.
 
 ## Headline findings (details in `docs/execution-and-bugs.md`)
 
-- **BUG-01 (Critical):** No `user-id` authenticates against the deployed API — every value returns
-  `401 invalid_user_id`, so balance, matches, and bet placement are all unreachable. The core product
-  is a total outage. Reproduced via direct API calls (~75 values) and through the app's own UI in a
-  real browser.
-- **BUG-02 (Medium):** `GET /api/place-bet` returns `200 {}` instead of `405 method_not_allowed`
-  (`PUT`/`DELETE` on the same route correctly return `405`).
+The core journey works (a bet places and the stake is deducted server-side), but exploration found
+several money-handling defects — the highest-impact class for a betting product:
+
+- **BUG-01 (Critical):** stakes exceeding the balance are accepted; the balance goes **negative**
+  (€20 balance + €100 bet → balance `-80`). No insufficient-balance enforcement.
+- **BUG-02 (Critical):** the success **receipt shows the wrong payout** (€20.00 for a €10 bet at odds
+  2.45; correct = €24.50 — and the pre-placement slip shows €24.50).
+- **BUG-03 (High):** `reset-balance` is **inconsistent** — response says `125.5`, persisted value is
+  `120` — and resets to the wrong amount.
+- **BUG-04 (High):** the **UI balance never refreshes** after a bet (server updates, header stays stale).
+- Plus: `place-bet` currency `USD` not `EUR`, payout truncation (51.24 vs 51.25), receipt teams
+  reversed, `GET /api/place-bet`→`200`, malformed JSON→`500`.
 - **Spec clarification:** minimum stake is stated as both €1.00 (Business Rules) and €1.01
   (Validation table); the API says "at least 1.00".
 
@@ -31,17 +37,18 @@ application and its API (`/api/docs`), not just the written spec.
 cd automation
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-pytest -m api        # fast API checks
-pytest -m ui         # UI journey (launches Chrome)
+pytest -m api        # fast API checks        -> 8 passed, 2 xfailed
+pytest -m ui         # UI journey (Chrome)    -> 1 passed, 3 xfailed
 ```
 
-See [`automation/README.md`](automation/README.md) for full setup, configuration, and the note on how
-the tests behave against the currently-broken deployment.
+The `xfailed` cases are the known defects above, encoded as strict expected-failures so the suite
+stays green while the bugs remain executable and documented. See
+[`automation/README.md`](automation/README.md) for setup and the auth note (use your issued user-id).
 
 ## Approach
 
 Correctness and risk-based prioritization over volume. Scenarios are chosen for the risk they buy
 down (can't bet / wrong charge / lying receipt / bad validation), split deliberately across UI and
-API layers. The automation asserts the **specification's expected** behavior and reads the target
-`user-id`/`BASE_URL` from config, so it is immediately reusable across environments and will pass
-automatically once the backend serves a valid user.
+API layers. The automation reads the target `user-id`/`BASE_URL` from config, so it is reusable
+across environments; known product bugs are captured as `xfail` checks that will flip to failures
+(prompting promotion to hard assertions) once fixed.

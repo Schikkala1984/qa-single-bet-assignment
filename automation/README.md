@@ -85,14 +85,23 @@ Override the target without touching code:
 
 ```bash
 # PowerShell
-$env:USER_ID="some_user"; $env:BASE_URL="https://qae-assignment-tau.vercel.app"; pytest
+$env:USER_ID="candidate-XXXX"; $env:BASE_URL="https://qae-assignment-tau.vercel.app"; pytest
 ```
 
-## Important: current state of the target deployment
+## Expected results
 
-During exploration the deployed API returned `401 invalid_user_id` for **every** user-id value
-tried (see `../docs/execution-and-bugs.md`, BUG-01). The tests assert the **specification's
-expected** behavior, so against the current (broken) deployment the authenticated tests will
-**fail by design** — a validation suite *should* flag a backend that stops enforcing the contract.
-As soon as a working `USER_ID` is supplied (or the backend is fixed), the suite passes with no code
-changes: set `USER_ID` and re-run.
+Both tests run green against the live app with the issued `USER_ID`:
+
+```
+pytest -m api   ->  8 passed, 2 xfailed
+pytest -m ui    ->  1 passed, 3 xfailed
+```
+
+The `xfailed` cases are **known product defects** encoded as strict expected-failures (currency
+`USD`, payout truncation, receipt payout, receipt team order, stale UI balance). They assert the
+spec-correct behavior and are documented in `../docs/execution-and-bugs.md`. Keeping them as `xfail`
+means the suite stays green while the bugs remain executable and self-documenting; when a bug is
+fixed the case flips to `XPASS` (a strict failure) to prompt promoting it to a hard assertion.
+
+> Auth note: the API validates `x-user-id` against an allowlist of issued ids, so you must use the
+> user-id assigned to you. The default in `config.py` / `.env.example` is set accordingly.

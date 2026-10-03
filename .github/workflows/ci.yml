@@ -26,7 +26,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Run API tests
         env:
-          USER_ID: ${{ secrets.USER_ID || 'chikkala-srinivas' }}
+          USER_ID: ${{ secrets.USER_ID || 'candidate-pGM9TBT3AEsq' }}
         run: pytest -m api -ra
 
   ui-tests:
@@ -47,5 +47,5 @@ jobs:
       - name: Run UI tests (headless)
         env:
           HEADLESS: "true"
-          USER_ID: ${{ secrets.USER_ID || 'chikkala-srinivas' }}
+          USER_ID: ${{ secrets.USER_ID || 'candidate-pGM9TBT3AEsq' }}
         run: pytest -m ui -ra
